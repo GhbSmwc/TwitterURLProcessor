@@ -1,0 +1,326 @@
+<html>
+	<head>
+		<style>
+			html {
+			background-color: black;
+			color: white;
+			font-family: sans-serif;
+			}
+			
+			table, th, td {
+			border: 1px solid white;
+			border-collapse: collapse;
+			}
+			
+			span.NoLineBreak {
+				white-space: nowrap;
+			}
+		</style>
+	</head>
+<body>
+<h1 style="text-align: center">Twitter URL converter</h1>
+<p>This JS tool takes a given list of twitter URLs to convert them to the old format, with some modification (such as generating a full resolution image). The purpose of this tool to automate converting a list of twitter links to the older format</p>
+<p>This tool is to be used with <a href="https://greasyfork.org/en/discussions/requests/57590-extract-links-to-tweet-and-media-on-twitter-as-you-scroll-down">this greasemonkey script</a> to extract twitter URLs (user's homepage, images, videos (that are on twitter's servers, not an external).).</p>
+
+<p>Enter the list of twitter URLs (1 URL per line, with no whitespace anywhere), be it a link to a tweet, an image, video, etc.</p>
+<textarea id="TwitterURLInput" type="text" cols="100" rows="30"></textarea><br>
+Sort:<br>
+<input type="radio" name="SortSettings" id="Setting_Sort_ABC" checked><label for="Setting_Sort_ABC">Alphabetically (lexicographically)</label><br>
+<input type="radio" name="SortSettings" id="Setting_Sort_URLType"><label for="Setting_Sort_URLType">Type (tweet homepage, tweet post, images, video)</label><br><br>
+
+<input type="checkbox" id="Setting_Sort_Reverse"><label for="Setting_Sort_Reverse">Reverse</label><br><br>
+Filter:<br>
+<button onclick="CheckAllFilters()">Check All</button><button onclick="UnCheckAllFilters()">Uncheck All</button><button onclick="InvertFilters()">Invert</button>
+<ul>
+	<li>Twitter pages</li>
+	<ul>
+		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterPage_UserMainPage" id="Setting_Filter_Homepage" checked><label for="Setting_Filter_Homepage">Homepage</label></li>
+		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterPage_Tweet" id="Setting_Filter_Tweets" checked><label for="Setting_Filter_Tweets">Tweets</label></li>
+	</ul>
+	<li>Images</li>
+	<ul>
+		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterMedia_PbsTwimg" id="Setting_Filter_ImagesDefaultResolution" checked><label for="Setting_Filter_ImagesDefaultResolution">Images (default resolution)</label></li>
+		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterMedia_PbsTwimg_Orig" id="Setting_Filter_ImagesOrigionalResolution" checked><label for="Setting_Filter_ImagesOrigionalResolution">Images (original resolution)</label></li>
+	</ul>
+	<li>Videos</li>
+	<ul>
+		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterMedia_PbsTwimg_Video" id="Setting_Filter_PbsTwimg_Video" checked><label for="Setting_Filter_PbsTwimg_Video">Video (<kbd>https://pbs.twimg.com/tweet_video/[video_id].mp4</kbd>)</label></li>
+		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterMedia_PbsTwimg_Video_Thumb" id="Setting_Filter_PbsTwimg_Video_Thumb" checked><label for="Setting_Filter_PbsTwimg_Video_Thumb">Video (<kbd>https://pbs.twimg.com/tweet_video_thumb/[video_id].[image_file_type]</kbd>)</label></li>
+		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterMedia_VideoTwimg" id="Setting_Filter_VideoTwimg_Video_Thumb" checked><label for="Setting_Filter_VideoTwimg_Video_Thumb">Video (<kbd>https://video.twimg.com/tweet_video/[video_id].mp4</kbd>)</label></li>
+	</ul>
+	<li>Other</li>
+	<ul>
+		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="Other" id="Setting_Filter_Other" ><label for="Setting_Filter_Other">Other</label></li>
+	</ul>
+</ul>
+
+<button onclick="Submit()">Submit</button>
+<hr>
+<span id="Output"></span>
+<script>
+	//Name of username or base64 string:
+		const String2Regex_AnyNonReservedCharacters = "[^\\?&\\.\\/\\:]+"
+	//https://twitter.com/
+			const String2Regex_TwitterHome = "https:\\/\\/twitter\\.com"
+			//https://twitter.com/username
+				const String2Regex_Username = "\\/" + String2Regex_AnyNonReservedCharacters
+				//https://twitter.com/username/<tabs> (<tabs> is either "with_replies", "media", and "likes")
+					const String2Regex_TabName = "\\/" + String2Regex_AnyNonReservedCharacters
+				//https://twitter.com/username/status/<tweet_ID>
+					const String2Regex_StatusAndTweetID = "\\/status\\/\\d+"
+	//https://pbs.twimg.com
+		const  String2Regex_PbsTwimgStartingPart = "https:\\/\\/pbs\\.twimg\\.com"
+		//https://pbs.twimg.com/media
+			const String2Regex_PbsTwimgMedia = "\\/media"
+			//Old: https://pbs.twimg.com/media/<base_64_string>.<file_type>[:<resolution>]
+			//New: https://pbs.twimg.com/media/<base_64_string>?format=<file_type>[&name=<resolution>]
+				const String2Regex_twimg_ImgID = String2Regex_AnyNonReservedCharacters
+				const String2Regex_twimg_FileType = String2Regex_AnyNonReservedCharacters
+		//https://pbs.twimg.com/tweet_video_thumb/
+			const String2Regex_twimg_VideoThumb = "\\/tweet_video_thumb"
+			//https://pbs.twimg.com/tweet_video_thumb/<thumbnail_id>.<file_type>
+			//https://pbs.twimg.com/tweet_video_thumb/<thumbnail_id>?format=<file_type>[&name=<resolution>]
+				const String2Regex_twimg_VideoThumbType = String2Regex_AnyNonReservedCharacters
+				const String2Regex_twimg_VideoThumbID = String2Regex_AnyNonReservedCharacters
+		//https://pbs.twimg.com/tweet_video/<video_id>.mp4
+	//https://video.twimg.com/tweet_video/<video_id>.mp4
+		const String2Regex_twimg2 = "https:\\/\\/video\\.twimg\\.com\\/tweet_video\\/"
+		const String2Regex_twimg2_VideoID = String2Regex_AnyNonReservedCharacters
+	function CheckAllFilters() {
+		let ListOfFilters = document.getElementsByClassName("TwitterURLFilter")
+		for (let Index = 0; Index < ListOfFilters.length; Index++) {
+			ListOfFilters[Index].checked = 1
+		}
+	}
+	function UnCheckAllFilters() {
+		let ListOfFilters = document.getElementsByClassName("TwitterURLFilter")
+		for (let Index = 0; Index < ListOfFilters.length; Index++) {
+			ListOfFilters[Index].checked = 0
+		}
+	}
+	function InvertFilters() {
+		let ListOfFilters = document.getElementsByClassName("TwitterURLFilter")
+		for (let Index = 0; Index < ListOfFilters.length; Index++) {
+			ListOfFilters[Index].checked = ListOfFilters[Index].checked ^ 1
+		}
+	}
+	function Submit() {
+		let Output = ""
+		let ListOfTwitterURLs = RemoveBlankOrSpacesEntry(RemoveItemsInTableFaggedAsDuplicates(ConvertURLListToTableFlaggingDuplicates((document.getElementById("TwitterURLInput").value).split("\n"))))
+		//OldFasionedURLs contains the old-fasioned URLs, the format the WBM uses when saving and viewing them.
+		//OldFasionedURLs[Index] = entire 2D array
+		//OldFasionedURLs[Index][0] = URLs
+		//OldFasionedURLs[Index][1] = Type:
+		//   TwitterPage_UserMainPage
+		//   TwitterPage_Tweet
+		//   TwitterMedia_PbsTwimg
+		//   TwitterMedia_PbsTwimg_Orig
+		//   TwitterMedia_PbsTwimg_Video
+		//   TwitterMedia_PbsTwimg_Video_Thumb
+		//   TwitterMedia_VideoTwimg
+		//   Other
+			let OldFasionedURLs = new Array()
+		//Generate converted URLs
+			{
+				for (let Index = 0; Index < ListOfTwitterURLs.length; Index++) {
+					if (RegExp("^" + String2Regex_TwitterHome).test(ListOfTwitterURLs[Index])) { //By making outer and larger if statement jumps, it skips ALL the unnecessary checks should for example if we are dealing with https://pbs.twimg.com and not to check https://twitter.com/.
+						if (RegExp("^" + String2Regex_TwitterHome + String2Regex_Username + "$").test(ListOfTwitterURLs[Index])) { //https://twitter.com/username
+							OldFasionedURLs = AddNewToOldFasionedURLs([ListOfTwitterURLs[Index], "TwitterPage_UserMainPage"], OldFasionedURLs)
+						} else if (RegExp("^" + String2Regex_TwitterHome + String2Regex_Username + String2Regex_TabName + "$").test(ListOfTwitterURLs[Index])) { //https://twitter.com/username/<tabs>
+							OldFasionedURLs = AddNewToOldFasionedURLs([ListOfTwitterURLs[Index].match(RegExp("^" + String2Regex_TwitterHome + String2Regex_Username + "(?=" + String2Regex_TabName + ")"))[0], "TwitterPage_UserMainPage"], OldFasionedURLs) //Get user mainpage
+						} else if (RegExp("^" + String2Regex_TwitterHome + String2Regex_Username + String2Regex_StatusAndTweetID + "$").test(ListOfTwitterURLs[Index])) { //https://twitter.com/username/status/<tweet_ID>
+							OldFasionedURLs = AddNewToOldFasionedURLs([ListOfTwitterURLs[Index].match(RegExp("^" + String2Regex_TwitterHome + String2Regex_Username + "(?=.+$)"))[0], "TwitterPage_UserMainPage"], OldFasionedURLs) //Homepage
+							OldFasionedURLs = AddNewToOldFasionedURLs([ListOfTwitterURLs[Index], "TwitterPage_Tweet"], OldFasionedURLs) //Tweet page
+						}
+					} else if (RegExp("^" + String2Regex_PbsTwimgStartingPart).test(ListOfTwitterURLs[Index])) { //https://pbs.twimg.com
+						if (RegExp("^" + String2Regex_PbsTwimgStartingPart + String2Regex_PbsTwimgMedia).test(ListOfTwitterURLs[Index])) { //https://pbs.twimg.com/media (This is normally images.)
+							let ImageID = ListOfTwitterURLs[Index].match(RegExp("(?<=^" + String2Regex_PbsTwimgStartingPart + String2Regex_PbsTwimgMedia + "\\/)" + String2Regex_twimg_ImgID))[0]
+							let ImageType = ""
+							if (RegExp("^" + String2Regex_PbsTwimgStartingPart + String2Regex_PbsTwimgMedia + "\\/" + String2Regex_twimg_ImgID + "\\.").test(ListOfTwitterURLs[Index])) { //in somehow twitter gives out the old image URL format
+								ImageType = ListOfTwitterURLs[Index].match(RegExp("(?<=^" + String2Regex_PbsTwimgStartingPart + String2Regex_PbsTwimgMedia + "\\/" + String2Regex_twimg_ImgID + "\\.)" + String2Regex_twimg_FileType + "(?=($|:))"))[0] //old format
+							} else {
+								ImageType = ListOfTwitterURLs[Index].match(RegExp("(?<=^" + String2Regex_PbsTwimgStartingPart + String2Regex_PbsTwimgMedia + "\\/" + String2Regex_twimg_ImgID + "\\?format=)" + String2Regex_twimg_FileType + "(?=($|&))"))[0] //new format
+							}
+							OldFasionedURLs = AddNewToOldFasionedURLs(["https://pbs.twimg.com/media/" + ImageID + "." + ImageType, "TwitterMedia_PbsTwimg"], OldFasionedURLs) //default resolution images
+							OldFasionedURLs = AddNewToOldFasionedURLs(["https://pbs.twimg.com/media/" + ImageID + "." + ImageType + ":orig", "TwitterMedia_PbsTwimg_Orig"], OldFasionedURLs) //original resolution images
+						} else if (RegExp("^" + String2Regex_PbsTwimgStartingPart + String2Regex_twimg_VideoThumb).test(ListOfTwitterURLs[Index])) { //https://pbs.twimg.com/tweet_video_thumb/
+							let VideoID = ListOfTwitterURLs[Index].match(RegExp("(?<=^" + String2Regex_PbsTwimgStartingPart + String2Regex_twimg_VideoThumb + "\\/)" + String2Regex_twimg_VideoThumbID + "(?=(\\.|\\?).*$)"))[0]
+							let ImageType = ""
+							if (RegExp("^" + String2Regex_PbsTwimgStartingPart + String2Regex_twimg_VideoThumb + "\\/" + String2Regex_twimg_VideoThumbID + "\\.").test(ListOfTwitterURLs[Index])) { //in somehow twitter gives out the old image URL format
+								ImageType = ListOfTwitterURLs[Index].match(RegExp("(?<=^" + String2Regex_PbsTwimgStartingPart + String2Regex_twimg_VideoThumb + "\\/" + String2Regex_twimg_VideoThumbID + "\\.)" + String2Regex_twimg_VideoThumbType + "(?=($|:))"))[0]
+							} else {
+								ImageType = ListOfTwitterURLs[Index].match(RegExp("(?<=^" + String2Regex_PbsTwimgStartingPart + String2Regex_twimg_VideoThumb + "\\/" + String2Regex_twimg_VideoThumbID + "\\?format=)" + String2Regex_twimg_VideoThumbType + "(?=($|:|\\&))"))[0]
+							}
+							OldFasionedURLs = AddNewToOldFasionedURLs([("https://pbs.twimg.com/tweet_video_thumb/" + VideoID + "." + ImageType), "TwitterMedia_PbsTwimg_Video_Thumb"], OldFasionedURLs)
+							OldFasionedURLs = AddNewToOldFasionedURLs([("https://pbs.twimg.com/tweet_video/" + VideoID + ".mp4"), "TwitterMedia_PbsTwimg_Video"], OldFasionedURLs)
+						}
+					
+					} else if (RegExp("^" + String2Regex_twimg2 + String2Regex_twimg2_VideoID + "\\.mp4" ).test(ListOfTwitterURLs[Index])){
+						let VideoID = ListOfTwitterURLs[Index].match(RegExp("(?<=^" + String2Regex_twimg2 + ")" + String2Regex_twimg2_VideoID + "(?=\\.|$)"))[0]
+						OldFasionedURLs = AddNewToOldFasionedURLs(["https://video.twimg.com/tweet_video/" + VideoID + ".mp4", "TwitterMedia_VideoTwimg"], OldFasionedURLs)
+						OldFasionedURLs = AddNewToOldFasionedURLs(["https://pbs.twimg.com/tweet_video/" + VideoID + ".mp4", "TwitterMedia_PbsTwimg_Video"], OldFasionedURLs)
+					} else {
+						OldFasionedURLs = AddNewToOldFasionedURLs([ListOfTwitterURLs[Index], "Other"], OldFasionedURLs)
+					}
+				}
+			}
+		//Sorter
+			if (document.getElementById("Setting_Sort_ABC").checked) {
+				if (document.getElementById("Setting_Sort_Reverse").checked == false) {
+					OldFasionedURLs.sort(SortABC)
+				} else {
+					OldFasionedURLs.sort(SortABCReverse)
+				}
+			} else if (document.getElementById("Setting_Sort_URLType").checked) {
+				if (document.getElementById("Setting_Sort_Reverse").checked == false) {
+					OldFasionedURLs.sort(SortURLType)
+				} else {
+					OldFasionedURLs.sort(SortURLTypeReverse)
+				}
+			}
+		//Filter
+		//Although "filter()" exists, it does not work well with nested arrays.
+			OldFasionedURLs = FilterTwitterURLs(OldFasionedURLs)
+		//Output
+			Output += "<kbd>Total (including varations) of results, after filtered: " + BigInt(OldFasionedURLs.length).toString(10) + "</kbd><br>"
+			Output += "<textarea type='text' cols='100' rows='30' readonly>"
+			{
+				for (let Index = 0; Index < OldFasionedURLs.length; Index++) {
+					Output += OldFasionedURLs[Index][0]
+					if (Index != OldFasionedURLs.length - 1) {
+						Output += "\n"
+					}
+				}
+			}
+			Output += "</textarea>"
+		//Display
+			document.getElementById("Output").innerHTML = Output
+	}
+	function ConvertURLListToTableFlaggingDuplicates(ArrayList) {
+		//This returns a 2D array: [[URL, DuplicateFlag], [URL, DuplicateFlag]]
+		//-URL is the list of stuff (primarily URLs), assuming this do not have any sub-arrays within.
+		//-DuplicateFlag is flagged false when no duplicates exists, otherwise if the second
+		// or later items also exist, they themselves are flagged as true (original is not flagged).
+		let index1 = 0
+		let index2 = 0
+		let OutputTableDuplicateFlags = new Array(ArrayList.length)
+		while (index1 < ArrayList.length) {
+			OutputTableDuplicateFlags[index1] = Array(ArrayList[index1], false)
+			index1++
+		}
+		index1 = 0
+		while (index1 < ArrayList.length) {
+			index2 = index1 + 1
+			while (index2 < ArrayList.length) {
+				if (ArrayList[index1] == ArrayList[index2]) {
+					OutputTableDuplicateFlags[index2][1] = true
+				}
+				index2++
+			}
+			index1++
+		}
+		return OutputTableDuplicateFlags
+	}
+	function RemoveItemsInTableFaggedAsDuplicates(TableFlaggingDups) {
+		//Extracts whatever outputted by ConvertURLListToTableFlaggingDuplicates
+		//that aren't duplicates, without gaps.
+		let index1 = 0
+		let index2 = 0
+		let OutputArray = new Array()
+		while (index1 < TableFlaggingDups.length) {
+			if (TableFlaggingDups[index1][1] == false) {
+				OutputArray.push(TableFlaggingDups[index1][0])
+				
+				index2++
+			}
+			index1++
+		}
+		return OutputArray
+	}
+	function RemoveBlankOrSpacesEntry(InputArray) {
+		let OutputArray = new Array()
+		let index1 = 0
+		let index2 = 0
+		while (index1 < InputArray.length) {
+			if ((/^(\s*)$|^()$/).test(InputArray[index1]) == false) {
+				OutputArray.push(InputArray[index1])
+				index2++
+			}
+			index1++
+		}
+		return OutputArray
+	}
+	function AddNewToOldFasionedURLs(Element, ArrayToInsert) {
+		//This takes a given element and array, checks if that element is already listed, if it is
+		//then the returned array is not modified, otherwise will be added, therefor avoid inserting
+		//duplicates.
+		//Element: What pair of data to insert, format: [URL, type]
+		//Array: What array to insert to. Note, although includes() exists, it does not work well with
+		//       nested arrays. Format:[[URL, type],[URL, type],...]
+		let MatchFound = false
+		for (let Index = 0; ((Index < ArrayToInsert.length)&&(MatchFound == false)); Index++) {
+			if (Element[0] == ArrayToInsert[Index][0]) {
+				MatchFound = true
+			}
+		}
+		if (MatchFound == false) {
+			ArrayToInsert.push(Element)
+		}
+		return ArrayToInsert
+	}
+//Sort functions, although array.reverse exist, that is unstable.
+	//Sort ABC
+		function SortABC(a, b) {
+			if (a[0] === b[0]) {
+				return 0;
+			}
+			else {
+				return (a[0] < b[0]) ? -1 : 1;
+			}
+		}
+		function SortABCReverse(a, b) {
+			if (a[0] === b[0]) {
+				return 0;
+			}
+			else {
+				return (a[0] < b[0]) ? 1 : -1;
+			}
+		}
+	//Sort based on type
+		function SortURLType(a, b) {
+			if (a[1] === b[1]) {
+				return 0;
+			}
+			else {
+				return (a[1] < b[1]) ? -1 : 1;
+			}
+		}
+		function SortURLTypeReverse(a, b) {
+			if (a[1] === b[1]) {
+				return 0;
+			}
+			else {
+				return (a[1] < b[1]) ? 1 : -1;
+			}
+		}
+//Filter
+	function FilterTwitterURLs(InputArray) {
+		let OutputArray = new Array()
+		let FilterList = new Array()
+		let ListOfFilters = document.getElementsByClassName("TwitterURLFilter")
+		for (let Index = 0; Index < ListOfFilters.length; Index++) {
+			if (ListOfFilters[Index].checked) {
+				FilterList.push(ListOfFilters[Index].dataset.js_twitter_url_filter)
+				let asdf = 0
+			}
+		}
+		for (let Index = 0; Index < InputArray.length; Index++) {
+			for (IndexFilterList = 0; IndexFilterList < FilterList.length; IndexFilterList++) {
+				if (InputArray[Index][1] == FilterList[IndexFilterList]) {
+					OutputArray.push(InputArray[Index])
+				}
+			}
+		}
+		return OutputArray
+	}
+</script>
