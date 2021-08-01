@@ -45,8 +45,8 @@ Filter:<br>
 	<li>Videos</li>
 	<ul>
 		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterMedia_PbsTwimg_Video" id="Setting_Filter_PbsTwimg_Video" checked><label for="Setting_Filter_PbsTwimg_Video">Video (<kbd>https://pbs.twimg.com/tweet_video/[video_id].mp4</kbd>)</label></li>
-		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterMedia_PbsTwimg_Video_Thumb" id="Setting_Filter_PbsTwimg_Video_Thumb" checked><label for="Setting_Filter_PbsTwimg_Video_Thumb">Video (<kbd>https://pbs.twimg.com/tweet_video_thumb/[video_id].[image_file_type]</kbd>)</label></li>
-		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterMedia_VideoTwimg" id="Setting_Filter_VideoTwimg_Video_Thumb" checked><label for="Setting_Filter_VideoTwimg_Video_Thumb">Video (<kbd>https://video.twimg.com/tweet_video/[video_id].mp4</kbd>)</label></li>
+		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterMedia_PbsTwimg_Video_Thumb" id="Setting_Filter_PbsTwimg_Video_Thumb" checked><label for="Setting_Filter_PbsTwimg_Video_Thumb">Video thumbnail (<kbd>https://pbs.twimg.com/tweet_video_thumb/[video_id].[image_file_type]</kbd>)</label></li>
+		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterMedia_VideoTwimg" id="Setting_Filter_VideoTwimg_Video_Thumb" checked><label for="Setting_Filter_VideoTwimg_Video_Thumb">Video (legacy URL? <kbd>https://video.twimg.com/tweet_video/[video_id].mp4</kbd>)</label></li>
 	</ul>
 	<li>Other</li>
 	<ul>
@@ -311,7 +311,6 @@ Filter:<br>
 		for (let Index = 0; Index < ListOfFilters.length; Index++) {
 			if (ListOfFilters[Index].checked) {
 				FilterList.push(ListOfFilters[Index].dataset.js_twitter_url_filter)
-				let asdf = 0
 			}
 		}
 		for (let Index = 0; Index < InputArray.length; Index++) {
