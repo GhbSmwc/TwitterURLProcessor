@@ -186,7 +186,7 @@ Filter:<br>
 			Output += "<textarea type='text' cols='100' rows='30' readonly>"
 			{
 				for (let Index = 0; Index < OldFasionedURLs.length; Index++) {
-					Output += OldFasionedURLs[Index][0]
+					Output += escapeHTMLChars(OldFasionedURLs[Index][0])
 					if (Index != OldFasionedURLs.length - 1) {
 						Output += "\n"
 					}
@@ -321,5 +321,12 @@ Filter:<br>
 			}
 		}
 		return OutputArray
+	}
+	function escapeHTMLChars(string) {
+		//Should the user's input contains "<", ">", and "&", prevent the innerHTML from treating these as HTML tags/escapes
+			string = string.replaceAll("&", "&amp;") //This must be done first, to avoid replacing already-replaced symbol's ampersand character.
+			string = string.replaceAll("<", "&lt;")
+			string = string.replaceAll(">", "&gt;")
+			return string
 	}
 </script>
