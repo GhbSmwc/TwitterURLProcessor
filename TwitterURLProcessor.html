@@ -22,35 +22,36 @@
 <p>This JS tool takes a given list of twitter URLs to convert them to the old format, with some modification (such as generating a full resolution image). The purpose of this tool to automate converting a list of twitter links to the older format</p>
 <p>This tool is to be used with <a href="https://greasyfork.org/en/discussions/requests/57590-extract-links-to-tweet-and-media-on-twitter-as-you-scroll-down">this greasemonkey script</a> to extract twitter URLs (user's homepage, images, videos (that are on twitter's servers, not an external).).</p>
 
+<input type="checkbox" id="AutoUpdate" onchange="AutoUpdateCode()" checked><label for="AutoUpdate">Auto update</label><br>
 <p>Enter the list of twitter URLs (1 URL per line, with no whitespace anywhere), be it a link to a tweet, an image, video, etc.</p>
-<textarea id="TwitterURLInput" type="text" cols="100" rows="30"></textarea><br>
+<textarea id="TwitterURLInput" type="text" cols="100" rows="30" oninput="AutoUpdateCode()"></textarea><br>
 Sort:<br>
-<input type="radio" name="SortSettings" id="Setting_Sort_ABC" checked><label for="Setting_Sort_ABC">Alphabetically (lexicographically)</label><br>
-<input type="radio" name="SortSettings" id="Setting_Sort_URLType"><label for="Setting_Sort_URLType">Type (tweet homepage, tweet post, images, video)</label><br><br>
+<input type="radio" name="SortSettings" onchange="AutoUpdateCode()" id="Setting_Sort_ABC" checked><label for="Setting_Sort_ABC">Alphabetically (lexicographically)</label><br>
+<input type="radio" name="SortSettings" onchange="AutoUpdateCode()" id="Setting_Sort_URLType"><label for="Setting_Sort_URLType">Type (tweet homepage, tweet post, images, video)</label><br><br>
 
-<input type="checkbox" id="Setting_Sort_Reverse"><label for="Setting_Sort_Reverse">Reverse</label><br><br>
+<input type="checkbox" id="Setting_Sort_Reverse" onchange="AutoUpdateCode()"><label for="Setting_Sort_Reverse">Reverse</label><br><br>
 Filter:<br>
-<button onclick="CheckAllFilters()">Check All</button><button onclick="UnCheckAllFilters()">Uncheck All</button><button onclick="InvertFilters()">Invert</button>
+<button onclick="CheckAllFilters(); AutoUpdateCode()">Check All</button><button onclick="UnCheckAllFilters(); AutoUpdateCode()">Uncheck All</button><button onclick="InvertFilters(); AutoUpdateCode()">Invert</button>
 <ul>
 	<li>Twitter pages</li>
 	<ul>
-		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterPage_UserMainPage" id="Setting_Filter_Homepage" checked><label for="Setting_Filter_Homepage">Homepage</label></li>
-		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterPage_Tweet" id="Setting_Filter_Tweets" checked><label for="Setting_Filter_Tweets">Tweets</label></li>
+		<li><input type="checkbox" class="TwitterURLFilter" onchange="AutoUpdateCode()" data-js_twitter_url_filter="TwitterPage_UserMainPage" id="Setting_Filter_Homepage" checked><label for="Setting_Filter_Homepage">Homepage</label></li>
+		<li><input type="checkbox" class="TwitterURLFilter" onchange="AutoUpdateCode()" data-js_twitter_url_filter="TwitterPage_Tweet" id="Setting_Filter_Tweets" checked><label for="Setting_Filter_Tweets">Tweets</label></li>
 	</ul>
 	<li>Images</li>
 	<ul>
-		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterMedia_PbsTwimg" id="Setting_Filter_ImagesDefaultResolution" checked><label for="Setting_Filter_ImagesDefaultResolution">Images (default resolution)</label></li>
-		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterMedia_PbsTwimg_Orig" id="Setting_Filter_ImagesOrigionalResolution" checked><label for="Setting_Filter_ImagesOrigionalResolution">Images (original resolution)</label></li>
+		<li><input type="checkbox" class="TwitterURLFilter" onchange="AutoUpdateCode()" data-js_twitter_url_filter="TwitterMedia_PbsTwimg" id="Setting_Filter_ImagesDefaultResolution" checked><label for="Setting_Filter_ImagesDefaultResolution">Images (default resolution)</label></li>
+		<li><input type="checkbox" class="TwitterURLFilter" onchange="AutoUpdateCode()" data-js_twitter_url_filter="TwitterMedia_PbsTwimg_Orig" id="Setting_Filter_ImagesOrigionalResolution" checked><label for="Setting_Filter_ImagesOrigionalResolution">Images (original resolution)</label></li>
 	</ul>
 	<li>Videos</li>
 	<ul>
-		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterMedia_PbsTwimg_Video" id="Setting_Filter_PbsTwimg_Video" checked><label for="Setting_Filter_PbsTwimg_Video">Video (<kbd>https://pbs.twimg.com/tweet_video/[video_id].mp4</kbd>)</label></li>
-		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterMedia_PbsTwimg_Video_Thumb" id="Setting_Filter_PbsTwimg_Video_Thumb" checked><label for="Setting_Filter_PbsTwimg_Video_Thumb">Video thumbnail (<kbd>https://pbs.twimg.com/tweet_video_thumb/[video_id].[image_file_type]</kbd>)</label></li>
-		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="TwitterMedia_VideoTwimg" id="Setting_Filter_VideoTwimg_Video_Thumb" checked><label for="Setting_Filter_VideoTwimg_Video_Thumb">Video (legacy URL? <kbd>https://video.twimg.com/tweet_video/[video_id].mp4</kbd>)</label></li>
+		<li><input type="checkbox" class="TwitterURLFilter" onchange="AutoUpdateCode()" data-js_twitter_url_filter="TwitterMedia_PbsTwimg_Video" id="Setting_Filter_PbsTwimg_Video" checked><label for="Setting_Filter_PbsTwimg_Video">Video (<kbd>https://pbs.twimg.com/tweet_video/[video_id].mp4</kbd>)</label></li>
+		<li><input type="checkbox" class="TwitterURLFilter" onchange="AutoUpdateCode()" data-js_twitter_url_filter="TwitterMedia_PbsTwimg_Video_Thumb" id="Setting_Filter_PbsTwimg_Video_Thumb" checked><label for="Setting_Filter_PbsTwimg_Video_Thumb">Video thumbnail (<kbd>https://pbs.twimg.com/tweet_video_thumb/[video_id].[image_file_type]</kbd>)</label></li>
+		<li><input type="checkbox" class="TwitterURLFilter" onchange="AutoUpdateCode()" data-js_twitter_url_filter="TwitterMedia_VideoTwimg" id="Setting_Filter_VideoTwimg_Video_Thumb" checked><label for="Setting_Filter_VideoTwimg_Video_Thumb">Video (legacy URL? <kbd>https://video.twimg.com/tweet_video/[video_id].mp4</kbd>)</label></li>
 	</ul>
 	<li>Other</li>
 	<ul>
-		<li><input type="checkbox" class="TwitterURLFilter" data-js_twitter_url_filter="Other" id="Setting_Filter_Other" ><label for="Setting_Filter_Other">Other</label></li>
+		<li><input type="checkbox" class="TwitterURLFilter" onchange="AutoUpdateCode()" data-js_twitter_url_filter="Other" id="Setting_Filter_Other" ><label for="Setting_Filter_Other">Other</label></li>
 	</ul>
 </ul>
 
@@ -86,6 +87,11 @@ Filter:<br>
 	//https://video.twimg.com/tweet_video/<video_id>.mp4
 		const String2Regex_twimg2 = "https:\\/\\/video\\.twimg\\.com\\/tweet_video\\/"
 		const String2Regex_twimg2_VideoID = String2Regex_AnyNonReservedCharacters
+	function AutoUpdateCode() {
+		if (document.getElementById("AutoUpdate").checked) {
+			Submit()
+		}
+	}
 	function CheckAllFilters() {
 		let ListOfFilters = document.getElementsByClassName("TwitterURLFilter")
 		for (let Index = 0; Index < ListOfFilters.length; Index++) {
